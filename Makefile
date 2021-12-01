@@ -3,7 +3,7 @@
 PREFIX=arm-none-eabi-
 
 ARCHFLAGS=-mthumb -mcpu=cortex-m0plus
-COMMONFLAGS=-g3 -Og -Wall -Werror $(ARCHFLAGS)
+COMMONFLAGS=-g3 -O0 -Wall -Werror $(ARCHFLAGS)
 
 CFLAGS=-I./includes $(COMMONFLAGS)
 LDFLAGS=$(COMMONFLAGS) --specs=nano.specs -Wl,--gc-sections,-Map,$(TARGET).map,-Tlink.ld

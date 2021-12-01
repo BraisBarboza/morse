@@ -76,7 +76,7 @@ void lcd_ini(void)
 
   // Configure LCD_SEG_AR  - Auxiliary Register, controls blinking of LCD
   //
-  LCD->AR =
+  LCD->AR =//PARA QUE PESTANEXE
     LCD_AR_BLINK(0) | //Clear LCD_SEG_AR_BLINK, Disable SLCD blinking. Enable to make LCD Blink
     //LCD_AR_ALT_MASK |   //Clear LCD_SEG_AR_ALT, if enabled LCD back plane sequencer changes to an alternate display.  Only functional if DUTY[2:0] is less than 100(binary). This allows a blink screen that is not blank
     //LCD_AR_BLANK_MASK | //Clear LCD_SEG_AR_BLANK, asserting bit clears all segments in LCD.
