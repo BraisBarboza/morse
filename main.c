@@ -11,11 +11,9 @@
 
 // Enable IRCLK (Internal Reference Clock)
 // see Chapter 24 in MCU doc
-unsigned volatile int was_sw1_pressed=0;
-unsigned volatile int was_sw2_pressed=0;
-unsigned int par=0;
-unsigned int miss=0;
-unsigned int hits=0;
+volatile int dots=0;
+volatile int lines=0;
+volatile int status=0;
 void irclk_ini()
 {
   MCG->C1 = MCG_C1_IRCLKEN(1) | MCG_C1_IREFSTEN(1);
@@ -50,17 +48,38 @@ void PORTDIntHandler(void)
 {
   PORTC->ISFR = 0xFFFFFFFF; // Clear IRQ
     if(sw1_check()){
-    was_sw1_pressed=1;
+    dots=dots+1;
     }
     while(sw1_check());
     if(sw2_check()){
-    was_sw2_pressed=1;
+    lines=lines+1;
     }
     while(sw2_check());
-    if ((par && was_sw1_pressed)||(!par && was_sw2_pressed)){
-      hits = hits+1;
-    }else miss=miss+1;
-    lcd_display_time(hits, miss);
+    if(status==0){
+      if(dots==3&&lines==0){
+        lcd_display_dec(5);
+        dots=0;
+        lines=0;
+        status=status+1;
+      }
+    }else if(status==1){
+      if(dots==0&&lines==3){
+        lcd_display_dec(50);
+        dots=0;
+        lines=0;
+        status=status+1;
+      }
+    }else if(status==2){
+      if(dots==3&&lines==0){
+        lcd_display_dec(505);
+        dots=0;
+        lines=0;
+        status=status+1;
+      }
+    }else if(status==3){
+      lcd_display_dec(505);
+      led_red_toggle();
+    }
 
 }
 void sw1_ini_irq()
@@ -167,64 +186,6 @@ int main(void)
   led_green_ini();
   led_red_ini();
   sws_init();
-  int red_status=0;
-  int green_status=0;
-  // 'Random' sequence :-)
-  volatile unsigned int sequence = 0x32B14D98,
-    index = 0;
-
-  while (index < 32) {
-      if (sequence & (1 << index)) { //odd
-        par=1;
-        //
-        // Switch on green led
-        // [...]
-        //
-        if (red_status)
-        {
-          red_status=!red_status;
-          led_red_toggle();
-        }
-        
-        if (!green_status)
-        {
-          green_status=!green_status;
-          led_green_toggle();
-        }
-      while(!(was_sw2_pressed||was_sw1_pressed)){
-      }
-      was_sw1_pressed=0;
-      was_sw2_pressed=0;
-      } else {
-        par=0;
-        //even
-        //
-        // Switch on red led
-        // [...]
-        //
-        if (green_status)
-        {
-          green_status=!green_status;
-          led_green_toggle();
-        }
-        
-        if (!red_status)
-        {
-          red_status=!red_status;
-          led_red_toggle();
-        }
-      while(!(was_sw2_pressed||was_sw1_pressed)){
-      }
-      was_sw1_pressed=0;
-      was_sw2_pressed=0;
-    }
-    // [...] 
-    index=index+1;
-}
-  NVIC_DisableIRQ(31);
-  LCD->AR|=LCD_AR_BLINK(1);
-  // Stop game and show blinking final result in LCD: hits:misses
-  // [...]
 
 
   return 0;
