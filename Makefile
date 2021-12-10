@@ -43,3 +43,9 @@ size:
 
 flash: all
 	openocd -f openocd.cfg -c "program main.elf verify reset exit"
+
+openocd:
+	gnome-terminal -- openocd
+
+debug: $(TARGET).elf
+	/usr/bin/gdb-multiarch -ex "target remote localhost:3333" $(TARGET).elf
