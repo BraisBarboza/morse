@@ -42,7 +42,7 @@ void WEAK  TSIIntHandler(void);
 void WEAK  MCGIntHandler(void);
 void WEAK  LPTMRIntHandler(void);
 void WEAK  PORTAIntHandler(void);
-void WEAK  PORTDIntHandler(void);
+void WEAK  PORTC_PORTD_IRQHandler(void);
 
 //*****************************************************************************
 // Symbols defined in linker script
@@ -129,7 +129,7 @@ void (* const g_pfnVectors[])(void) =
     LPTMRIntHandler,                        // PIT handler
     0,                                      // Reserved
     PORTAIntHandler,                        // PORTA handler
-    PORTDIntHandler,                        // PORTC/PORTD handler
+    PORTC_PORTD_IRQHandler,                        // PORTC/PORTD handler
   };
 
 //*****************************************************************************
