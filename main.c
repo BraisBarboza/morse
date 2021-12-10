@@ -1,5 +1,6 @@
 #include "MKL46Z4.h"
 #include "lcd.h"
+#include "fsl_rtc.h"
 
 volatile int button = 0;
 
@@ -24,13 +25,13 @@ void PORTC_PORTD_IRQHandler(void)
   {
     // Para evitar que se execute constantemente a interrupción.
     PORTC->PCR[3] |= PORT_PCR_ISF_MASK;
-    button = 1;
+    button = 1; // ·
   }
   else /* Interrupt on SW3 detected */
   {
     // Para evitar que se execute constantemente a interrupción.
     PORTC->PCR[12] |= PORT_PCR_ISF_MASK;
-    button = 2;
+    button = 2; // -
   }
 }
 
@@ -98,6 +99,17 @@ int main(void)
   led_green_ini();
   led_red_ini();
   buttons_ini();
+  
+  rtc_config_t *config = malloc(sizeof(rtc_config_t));
+  config->wakeupSelect = false;
+  config->updateMode = true;
+  config->supervisorAccess = true;
+
+  //RTC_Init((RTC_Type *)RTC->CR, config);
+  // RTC_StartTimer(RTC_BASE);
+  // RTC_Reset(RTC_BASE);
+
+
 
   return 0;
 }
