@@ -8,7 +8,7 @@ typedef enum _rtc_status_flags
   kRTC_AlarmFlag = (1U << 2U),        /*!< Alarm flag*/
 } rtc_status_flags_t;
 
-volatile int button = 0, count = 0;
+volatile int button = 0, count = 1;
 
 void irclk_ini()
 {
@@ -20,7 +20,7 @@ void delay(void)
 {
   volatile int i;
 
-  for (i = 0; i < 1000000; i++)
+  for (i = 0; i < 5000000; i++)
     ;
 }
 
@@ -102,24 +102,40 @@ void leds_ini()
   GPIOE->PSOR = (1 << 29);
 }
 
+void RTC_reset()
+{
+  RTC->CR |= RTC_CR_SWR_MASK;
+  RTC->CR &= ~RTC_CR_SWR_MASK;
+
+  /* Set TSR register to 0x1 to avoid the timer invalid (TIF) bit being set in the SR register */
+  RTC->TSR = 1U;
+}
+
 void RTC_ini()
 {
   SIM->SOPT2 |= SIM_SOPT2_CLKOUTSEL(0); // 1 Hz
   SIM->SOPT1 |= SIM_SOPT1_OSC32KSEL(1); // RTC_CLKIN
+  SIM->SCGC6 |= SIM_SCGC6_RTC_MASK;
 
-  uint32_t updateMode = 1, supervisorAccess = 1, wakeupSelect = 0, compensationInterval = 0, compensationTime = 0;
-  uint32_t reg;
-  reg = RTC->CR;
-  /* Setup the update mode and supervisor access mode */
-  reg |= RTC_CR_UM(updateMode) | RTC_CR_SUP(supervisorAccess);
-  reg |= RTC_CR_WPS(wakeupSelect);
-
-  RTC->CR = reg;
-
-  /* Configure the RTC time compensation register */
-  RTC->TCR = (RTC_TCR_CIR(compensationInterval) | RTC_TCR_TCR(compensationTime));
+  //To clear the Time invalid Flag
+  // RTC->TSR = 1;
   /* Enable time seconds interrupts */
   RTC->IER |= RTC_IER_TSIE(1);
+  
+  // RTC->LR |= RTC_LR_LRL(1);
+  // RTC->LR |= RTC_LR_CRL(1);
+  // RTC->LR |= RTC_LR_TCL(1);
+
+  /* Enable oscillator */
+  //RTC->CR = RTC_CR_OSCE(1);
+  /* Setup the update mode and supervisor access mode */
+  RTC->CR |= RTC_CR_UM(1) | RTC_CR_SUP(0);
+  RTC->CR |= RTC_CR_WPS(0);
+
+  /* Configure the RTC time compensation register */
+  RTC->TCR |= RTC_TCR_CIR(0);
+  RTC->TCR |= RTC_TCR_TCR(0);
+  
 }
 
 void RTC_start()
@@ -130,15 +146,6 @@ void RTC_start()
 void RTC_stop()
 {
   RTC->SR &= ~RTC_SR_TCE_MASK; // Time counter is disabled.
-}
-
-void RTC_reset()
-{
-  RTC->CR |= RTC_CR_SWR_MASK;
-  RTC->CR &= ~RTC_CR_SWR_MASK;
-
-  /* Set TSR register to 0x1 to avoid the timer invalid (TIF) bit being set in the SR register */
-  RTC->TSR = 1U;
 }
 
 int main(void)
@@ -168,6 +175,7 @@ int main(void)
    * lcd_clear();
    */
 
+  //RTC_reset();
   RTC_ini();
   
   while(1){
@@ -204,7 +212,7 @@ int main(void)
     /* Primeira O */
     /* Liña 1 */
     while (button == 0){}
-    if (count > 6 || count < 1 || button != 2){
+    if (count > 6 /*|| count < 1*/ || button != 2){
       button = 0; // Reset botón pulsado
       continue; // Volve a while(1)
     }else{
@@ -235,7 +243,7 @@ int main(void)
     /* Segunda S */
     /* Punto 1 */
     while (button == 0){}
-    if (count > 6 || count < 1 || button != 1){
+    if (count > 6 /*|| count < 1*/ || button != 1){
       button = 0; // Reset botón pulsado
       continue; // Volve a while(1)
     }else{
