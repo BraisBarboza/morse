@@ -1,31 +1,11 @@
 #include "MKL46Z4.h"
 #include "lcd.h"
 
-
 typedef enum _rtc_status_flags
 {
-    kRTC_TimeInvalidFlag = (1U << 0U),            /*!< Time invalid flag */
-    kRTC_TimeOverflowFlag = (1U << 1U),           /*!< Time overflow flag */
-    kRTC_AlarmFlag = (1U << 2U),                   /*!< Alarm flag*/
-#if defined(FSL_FEATURE_RTC_HAS_MONOTONIC) && (FSL_FEATURE_RTC_HAS_MONOTONIC)
-    kRTC_MonotonicOverflowFlag = (1U << 3U),       /*!< Monotonic Overflow Flag */
-#endif /* FSL_FEATURE_RTC_HAS_MONOTONIC */
-#if (defined(FSL_FEATURE_RTC_HAS_SR_TIDF) && FSL_FEATURE_RTC_HAS_SR_TIDF)
-    kRTC_TamperInterruptDetectFlag = (1U << 4U), /*!< Tamper interrupt detect flag */
-#endif                                                 /* FSL_FEATURE_RTC_HAS_SR_TIDF */
-#if (defined(FSL_FEATURE_RTC_HAS_TDR) && FSL_FEATURE_RTC_HAS_TDR)
-    kRTC_TestModeFlag = (1U << 5U),      /* Test mode flag */
-    kRTC_FlashSecurityFlag = (1U << 6U), /* Flash security flag */
-#if (defined(FSL_FEATURE_RTC_HAS_TDR_TPF) && FSL_FEATURE_RTC_HAS_TDR_TPF)
-    kRTC_TamperPinFlag = (1U << 7U),     /* Tamper pin flag */
-#endif                                         /* FSL_FEATURE_RTC_HAS_TDR_TPF */
-#if (defined(FSL_FEATURE_RTC_HAS_TDR_STF) && FSL_FEATURE_RTC_HAS_TDR_STF)
-    kRTC_SecurityTamperFlag = (1U << 8U), /* Security tamper flag */
-#endif                                          /* FSL_FEATURE_RTC_HAS_TDR_STF */
-#if (defined(FSL_FEATURE_RTC_HAS_TDR_LCTF) && FSL_FEATURE_RTC_HAS_TDR_LCTF)
-    kRTC_LossOfClockTamperFlag = (1U << 9U), /* Loss of clock flag */
-#endif                                             /* FSL_FEATURE_RTC_HAS_TDR_LCTF */
-#endif /* FSL_FEATURE_RTC_HAS_TDR */
+  kRTC_TimeInvalidFlag = (1U << 0U),  /*!< Time invalid flag */
+  kRTC_TimeOverflowFlag = (1U << 1U), /*!< Time overflow flag */
+  kRTC_AlarmFlag = (1U << 2U),        /*!< Alarm flag*/
 } rtc_status_flags_t;
 
 volatile int button = 0;
@@ -51,13 +31,13 @@ void PORTC_PORTD_IRQHandler(void)
   {
     // Para evitar que se execute constantemente a interrupción.
     PORTC->PCR[3] |= PORT_PCR_ISF_MASK;
-    button = 1; // ·
+    button = 1; // · (S)
   }
   else /* Interrupt on SW3 detected */
   {
     // Para evitar que se execute constantemente a interrupción.
     PORTC->PCR[12] |= PORT_PCR_ISF_MASK;
-    button = 2; // -
+    button = 2; // - (O)
   }
 }
 
@@ -120,21 +100,6 @@ void leds_ini()
 
 void RTC_ini()
 {
-  /*
-  #if defined(RTC_CLOCKS)
-    #if !(defined(FSL_SDK_DISABLE_DRIVER_CLOCK_CONTROL) && FSL_SDK_DISABLE_DRIVER_CLOCK_CONTROL)
-      uint32_t regAddr = SIM_BASE + CLK_GATE_ABSTRACT_REG_OFFSET((uint32_t)kCLOCK_Rtc0);
-      (*(volatile uint32_t *)regAddr) |= (1U << CLK_GATE_ABSTRACT_BITS_SHIFT((uint32_t)kCLOCK_Rtc0));
-    #endif 
-  #endif
-  */
-
-  /* Issue a software reset if timer is invalid */
-  if (RTC_GetStatusFlags(RTC) & kRTC_TimeInvalidFlag)
-  {
-    RTC_reset(RTC);
-  }
-
   SIM->SOPT2 |= SIM_SOPT2_CLKOUTSEL(0); // 1 Hz
   SIM->SOPT1 |= SIM_SOPT1_OSC32KSEL(1); // RTC_CLKIN
 
@@ -153,17 +118,18 @@ void RTC_ini()
   RTC->IER |= RTC_IER_TSIE(1);
 }
 
-RTC_start()
+void RTC_start()
 {
   RTC->SR |= RTC_SR_TCE_MASK; // Time counter is enabled.
 }
 
-RTC_stop()
+void RTC_stop()
 {
   RTC->SR &= ~RTC_SR_TCE_MASK; // Time counter is disabled.
 }
 
-RTC_reset(){
+void RTC_reset()
+{
   RTC->CR |= RTC_CR_SWR_MASK;
   RTC->CR &= ~RTC_CR_SWR_MASK;
 
@@ -178,6 +144,25 @@ int main(void)
   led_green_ini();
   led_red_ini();
   buttons_ini();
+
+  /**
+   * Cada vez que se pulse un botón débese comprobar e reiniciar o RTC.
+   *
+   * Pseudocódigo:
+   *
+   * while 1
+   *  lcd_clear();
+   *  esperar botón SW1
+   *    (comprobar RTC + esperar botón SW1) * 2
+   *      se non é o esperado "continue;"
+   *    (comprobar RTC + esperar botón SW3) * 3
+   *      se non é o esperado "continue;"
+   *    (comprobar RTC + esperar botón SW1) * 3
+   *      se non é o esperado "continue;"
+   *  lcd_SOS();
+   *  delay();
+   * lcd_clear();
+   */
 
   RTC_ini();
   RTC_start();
