@@ -1,6 +1,32 @@
 #include "MKL46Z4.h"
 #include "lcd.h"
-#include "fsl_rtc.h"
+
+
+typedef enum _rtc_status_flags
+{
+    kRTC_TimeInvalidFlag = (1U << 0U),            /*!< Time invalid flag */
+    kRTC_TimeOverflowFlag = (1U << 1U),           /*!< Time overflow flag */
+    kRTC_AlarmFlag = (1U << 2U),                   /*!< Alarm flag*/
+#if defined(FSL_FEATURE_RTC_HAS_MONOTONIC) && (FSL_FEATURE_RTC_HAS_MONOTONIC)
+    kRTC_MonotonicOverflowFlag = (1U << 3U),       /*!< Monotonic Overflow Flag */
+#endif /* FSL_FEATURE_RTC_HAS_MONOTONIC */
+#if (defined(FSL_FEATURE_RTC_HAS_SR_TIDF) && FSL_FEATURE_RTC_HAS_SR_TIDF)
+    kRTC_TamperInterruptDetectFlag = (1U << 4U), /*!< Tamper interrupt detect flag */
+#endif                                                 /* FSL_FEATURE_RTC_HAS_SR_TIDF */
+#if (defined(FSL_FEATURE_RTC_HAS_TDR) && FSL_FEATURE_RTC_HAS_TDR)
+    kRTC_TestModeFlag = (1U << 5U),      /* Test mode flag */
+    kRTC_FlashSecurityFlag = (1U << 6U), /* Flash security flag */
+#if (defined(FSL_FEATURE_RTC_HAS_TDR_TPF) && FSL_FEATURE_RTC_HAS_TDR_TPF)
+    kRTC_TamperPinFlag = (1U << 7U),     /* Tamper pin flag */
+#endif                                         /* FSL_FEATURE_RTC_HAS_TDR_TPF */
+#if (defined(FSL_FEATURE_RTC_HAS_TDR_STF) && FSL_FEATURE_RTC_HAS_TDR_STF)
+    kRTC_SecurityTamperFlag = (1U << 8U), /* Security tamper flag */
+#endif                                          /* FSL_FEATURE_RTC_HAS_TDR_STF */
+#if (defined(FSL_FEATURE_RTC_HAS_TDR_LCTF) && FSL_FEATURE_RTC_HAS_TDR_LCTF)
+    kRTC_LossOfClockTamperFlag = (1U << 9U), /* Loss of clock flag */
+#endif                                             /* FSL_FEATURE_RTC_HAS_TDR_LCTF */
+#endif /* FSL_FEATURE_RTC_HAS_TDR */
+} rtc_status_flags_t;
 
 volatile int button = 0;
 
@@ -92,6 +118,59 @@ void leds_ini()
   GPIOE->PSOR = (1 << 29);
 }
 
+void RTC_ini()
+{
+  /*
+  #if defined(RTC_CLOCKS)
+    #if !(defined(FSL_SDK_DISABLE_DRIVER_CLOCK_CONTROL) && FSL_SDK_DISABLE_DRIVER_CLOCK_CONTROL)
+      uint32_t regAddr = SIM_BASE + CLK_GATE_ABSTRACT_REG_OFFSET((uint32_t)kCLOCK_Rtc0);
+      (*(volatile uint32_t *)regAddr) |= (1U << CLK_GATE_ABSTRACT_BITS_SHIFT((uint32_t)kCLOCK_Rtc0));
+    #endif 
+  #endif
+  */
+
+  /* Issue a software reset if timer is invalid */
+  if (RTC_GetStatusFlags(RTC) & kRTC_TimeInvalidFlag)
+  {
+    RTC_reset(RTC);
+  }
+
+  SIM->SOPT2 |= SIM_SOPT2_CLKOUTSEL(0); // 1 Hz
+  SIM->SOPT1 |= SIM_SOPT1_OSC32KSEL(1); // RTC_CLKIN
+
+  uint32_t updateMode = 1, supervisorAccess = 1, wakeupSelect = 0, compensationInterval = 0, compensationTime = 0;
+  uint32_t reg;
+  reg = RTC->CR;
+  /* Setup the update mode and supervisor access mode */
+  reg |= RTC_CR_UM(updateMode) | RTC_CR_SUP(supervisorAccess);
+  reg |= RTC_CR_WPS(wakeupSelect);
+
+  RTC->CR = reg;
+
+  /* Configure the RTC time compensation register */
+  RTC->TCR = (RTC_TCR_CIR(compensationInterval) | RTC_TCR_TCR(compensationTime));
+  /* Enable time seconds interrupts */
+  RTC->IER |= RTC_IER_TSIE(1);
+}
+
+RTC_start()
+{
+  RTC->SR |= RTC_SR_TCE_MASK; // Time counter is enabled.
+}
+
+RTC_stop()
+{
+  RTC->SR &= ~RTC_SR_TCE_MASK; // Time counter is disabled.
+}
+
+RTC_reset(){
+  RTC->CR |= RTC_CR_SWR_MASK;
+  RTC->CR &= ~RTC_CR_SWR_MASK;
+
+  /* Set TSR register to 0x1 to avoid the timer invalid (TIF) bit being set in the SR register */
+  RTC->TSR = 1U;
+}
+
 int main(void)
 {
   irclk_ini();
@@ -99,17 +178,11 @@ int main(void)
   led_green_ini();
   led_red_ini();
   buttons_ini();
-  
-  rtc_config_t *config = malloc(sizeof(rtc_config_t));
-  config->wakeupSelect = false;
-  config->updateMode = true;
-  config->supervisorAccess = true;
 
-  //RTC_Init((RTC_Type *)RTC->CR, config);
-  // RTC_StartTimer(RTC_BASE);
-  // RTC_Reset(RTC_BASE);
-
-
+  RTC_ini();
+  RTC_start();
+  RTC_stop();
+  RTC_reset();
 
   return 0;
 }
