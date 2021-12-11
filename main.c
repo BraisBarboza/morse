@@ -8,7 +8,7 @@ typedef enum _rtc_status_flags
   kRTC_AlarmFlag = (1U << 2U),        /*!< Alarm flag*/
 } rtc_status_flags_t;
 
-volatile int button = 0;
+volatile int button = 0, count = 0;
 
 void irclk_ini()
 {
@@ -39,6 +39,10 @@ void PORTC_PORTD_IRQHandler(void)
     PORTC->PCR[12] |= PORT_PCR_ISF_MASK;
     button = 2; // - (O)
   }
+}
+
+void RTCSIntHandler(void){
+  count += 1;
 }
 
 void buttons_ini()
@@ -154,20 +158,113 @@ int main(void)
    *  lcd_clear();
    *  esperar botón SW1
    *    (comprobar RTC + esperar botón SW1) * 2
-   *      se non é o esperado "continue;"
+   *      se non é o esperado "continue; // Volve a while(1)"
    *    (comprobar RTC + esperar botón SW3) * 3
-   *      se non é o esperado "continue;"
+   *      se non é o esperado "continue; // Volve a while(1)"
    *    (comprobar RTC + esperar botón SW1) * 3
-   *      se non é o esperado "continue;"
+   *      se non é o esperado "continue; // Volve a while(1)"
    *  lcd_SOS();
    *  delay();
    * lcd_clear();
    */
 
   RTC_ini();
-  RTC_start();
-  RTC_stop();
-  RTC_reset();
+  
+  while(1){
+    RTC_start();
+    lcd_clear();
+    button = 0; // Reset botón pulsado
 
+    /* Primeira S */
+    /* Punto 1 */
+    while (button != 1){}
+    count = 0; // Iníciase conta de novo
+    button = 0; // Reset botón pulsado
+    
+    /* Punto 2 */
+    while (button == 0){}
+    if (count > 1 || button != 1){
+      button = 0; // Reset botón pulsado
+      continue; // Volve a while(1)
+    }else{
+      button = 0; // Reset botón pulsado
+      count = 0; // Iníciase conta de novo
+    }
+
+    /* Punto 3 */
+    while (button == 0){}
+    if (count > 1 || button != 1){
+      button = 0; // Reset botón pulsado
+      continue; // Volve a while(1)
+    }else{
+      button = 0; // Reset botón pulsado
+      count = 0; // Iníciase conta de novo
+    }
+
+    /* Primeira O */
+    /* Liña 1 */
+    while (button == 0){}
+    if (count > 6 || count < 1 || button != 2){
+      button = 0; // Reset botón pulsado
+      continue; // Volve a while(1)
+    }else{
+      button = 0; // Reset botón pulsado
+      count = 0; // Iníciase conta de novo
+    }
+
+    /* Liña 2 */
+    while (button == 0){}
+    if (count > 1 || button != 2){
+      button = 0; // Reset botón pulsado
+      continue; // Volve a while(1)
+    }else{
+      button = 0; // Reset botón pulsado
+      count = 0; // Iníciase conta de novo
+    }
+
+    /* Liña 3 */
+    while (button == 0){}
+    if (count > 1 || button != 2){
+      button = 0; // Reset botón pulsado
+      continue; // Volve a while(1)
+    }else{
+      button = 0; // Reset botón pulsado
+      count = 0; // Iníciase conta de novo
+    }
+
+    /* Segunda S */
+    /* Punto 1 */
+    while (button == 0){}
+    if (count > 6 || count < 1 || button != 1){
+      button = 0; // Reset botón pulsado
+      continue; // Volve a while(1)
+    }else{
+      button = 0; // Reset botón pulsado
+      count = 0; // Iníciase conta de novo
+    }
+    
+    /* Punto 2 */
+    while (button == 0){}
+    if (count > 1 || button != 1){
+      button = 0; // Reset botón pulsado
+      continue; // Volve a while(1)
+    }else{
+      button = 0; // Reset botón pulsado
+      count = 0; // Iníciase conta de novo
+    }
+
+    /* Punto 3 */
+    while (button == 0){}
+    if (count > 1 || button != 1){
+      button = 0; // Reset botón pulsado
+      continue; // Volve a while(1)
+    }else{
+      button = 0; // Reset botón pulsado
+      count = 0; // Iníciase conta de novo
+    }
+    
+    lcd_SOS();
+    delay();
+  }
   return 0;
 }
