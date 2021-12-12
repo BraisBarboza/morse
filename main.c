@@ -1,14 +1,7 @@
 #include "MKL46Z4.h"
 #include "lcd.h"
 
-typedef enum _rtc_status_flags
-{
-  kRTC_TimeInvalidFlag = (1U << 0U),  /*!< Time invalid flag */
-  kRTC_TimeOverflowFlag = (1U << 1U), /*!< Time overflow flag */
-  kRTC_AlarmFlag = (1U << 2U),        /*!< Alarm flag*/
-} rtc_status_flags_t;
-
-volatile int button = 0, count = 1;
+volatile int button = 0, count = 0;
 
 void irclk_ini()
 {
@@ -19,9 +12,7 @@ void irclk_ini()
 void delay(void)
 {
   volatile int i;
-
-  for (i = 0; i < 5000000; i++)
-    ;
+  for (i = 0; i < 5000000; i++);
 }
 
 void PORTC_PORTD_IRQHandler(void)
@@ -39,10 +30,6 @@ void PORTC_PORTD_IRQHandler(void)
     PORTC->PCR[12] |= PORT_PCR_ISF_MASK;
     button = 2; // - (O)
   }
-}
-
-void RTCSIntHandler(void){
-  count += 1;
 }
 
 void buttons_ini()
@@ -102,6 +89,10 @@ void leds_ini()
   GPIOE->PSOR = (1 << 29);
 }
 
+void RTCSIntHandler(void){
+  count += 1;
+}
+
 void RTC_reset()
 {
   RTC->CR |= RTC_CR_SWR_MASK;
@@ -113,24 +104,26 @@ void RTC_reset()
 
 void RTC_ini()
 {
-  SIM->SOPT2 |= SIM_SOPT2_CLKOUTSEL(0); // 1 Hz
+  SIM->SOPT2 |= SIM_SOPT2_CLKOUTSEL(1); // 0 para 1 Hz, 1 para oscilador
   SIM->SOPT1 |= SIM_SOPT1_OSC32KSEL(1); // RTC_CLKIN
   SIM->SCGC6 |= SIM_SCGC6_RTC_MASK;
+  NVIC_EnableIRQ(21);
+
+  RTC->LR |= RTC_LR_LRL(1);
+  RTC->LR |= RTC_LR_CRL(1);
+  RTC->LR |= RTC_LR_TCL(1);
 
   //To clear the Time invalid Flag
-  // RTC->TSR = 1;
+  RTC->TSR = 1;
   /* Enable time seconds interrupts */
   RTC->IER |= RTC_IER_TSIE(1);
-  
-  // RTC->LR |= RTC_LR_LRL(1);
-  // RTC->LR |= RTC_LR_CRL(1);
-  // RTC->LR |= RTC_LR_TCL(1);
 
   /* Enable oscillator */
-  //RTC->CR = RTC_CR_OSCE(1);
+  RTC->CR = RTC_CR_OSCE(1);
   /* Setup the update mode and supervisor access mode */
-  RTC->CR |= RTC_CR_UM(1) | RTC_CR_SUP(0);
-  RTC->CR |= RTC_CR_WPS(0);
+  RTC->CR |= RTC_CR_UM(1);
+  RTC->CR |= RTC_CR_SUP(1);
+  RTC->CR |= RTC_CR_WPS(1);
 
   /* Configure the RTC time compensation register */
   RTC->TCR |= RTC_TCR_CIR(0);
@@ -175,7 +168,6 @@ int main(void)
    * lcd_clear();
    */
 
-  //RTC_reset();
   RTC_ini();
   
   while(1){
@@ -185,12 +177,12 @@ int main(void)
 
     /* Primeira S */
     /* Punto 1 */
-    while (button != 1){}
+    while (button != 1);
     count = 0; // Iníciase conta de novo
     button = 0; // Reset botón pulsado
     
     /* Punto 2 */
-    while (button == 0){}
+    while (button == 0);
     if (count > 1 || button != 1){
       button = 0; // Reset botón pulsado
       continue; // Volve a while(1)
@@ -200,7 +192,7 @@ int main(void)
     }
 
     /* Punto 3 */
-    while (button == 0){}
+    while (button == 0);
     if (count > 1 || button != 1){
       button = 0; // Reset botón pulsado
       continue; // Volve a while(1)
@@ -211,7 +203,7 @@ int main(void)
 
     /* Primeira O */
     /* Liña 1 */
-    while (button == 0){}
+    while (button == 0);
     if (count > 6 /*|| count < 1*/ || button != 2){
       button = 0; // Reset botón pulsado
       continue; // Volve a while(1)
@@ -221,7 +213,7 @@ int main(void)
     }
 
     /* Liña 2 */
-    while (button == 0){}
+    while (button == 0);
     if (count > 1 || button != 2){
       button = 0; // Reset botón pulsado
       continue; // Volve a while(1)
@@ -231,7 +223,7 @@ int main(void)
     }
 
     /* Liña 3 */
-    while (button == 0){}
+    while (button == 0);
     if (count > 1 || button != 2){
       button = 0; // Reset botón pulsado
       continue; // Volve a while(1)
@@ -242,7 +234,7 @@ int main(void)
 
     /* Segunda S */
     /* Punto 1 */
-    while (button == 0){}
+    while (button == 0);
     if (count > 6 /*|| count < 1*/ || button != 1){
       button = 0; // Reset botón pulsado
       continue; // Volve a while(1)
@@ -252,7 +244,7 @@ int main(void)
     }
     
     /* Punto 2 */
-    while (button == 0){}
+    while (button == 0);
     if (count > 1 || button != 1){
       button = 0; // Reset botón pulsado
       continue; // Volve a while(1)
@@ -262,7 +254,7 @@ int main(void)
     }
 
     /* Punto 3 */
-    while (button == 0){}
+    while (button == 0);
     if (count > 1 || button != 1){
       button = 0; // Reset botón pulsado
       continue; // Volve a while(1)
