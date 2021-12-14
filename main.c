@@ -173,6 +173,7 @@ int main(void)
   while(1){
     RTC_start();
     lcd_clear();
+    lcd_blink(0);
     button = 0; // Reset botón pulsado
 
     /* Primeira S */
@@ -200,10 +201,15 @@ int main(void)
       button = 0; // Reset botón pulsado
       count = 0; // Iníciase conta de novo
     }
+    lcd_set(5,2);
+    lcd_blink(1);
 
     /* Primeira O */
     /* Liña 1 */
-    while (button == 0);
+    while (button == 0){
+      if (count == 1)
+        lcd_blink(0);
+    }
     if (count > 6 /*|| count < 1*/ || button != 2){
       button = 0; // Reset botón pulsado
       continue; // Volve a while(1)
@@ -211,6 +217,7 @@ int main(void)
       button = 0; // Reset botón pulsado
       count = 0; // Iníciase conta de novo
     }
+    lcd_blink(0); // Por se actualiza count inesperadamente.
 
     /* Liña 2 */
     while (button == 0);
@@ -231,10 +238,15 @@ int main(void)
       button = 0; // Reset botón pulsado
       count = 0; // Iníciase conta de novo
     }
+    lcd_set(0,3);
+    lcd_blink(1);
 
     /* Segunda S */
     /* Punto 1 */
-    while (button == 0);
+    while (button == 0){
+      if (count == 1)
+        lcd_blink(0);
+    }
     if (count > 6 /*|| count < 1*/ || button != 1){
       button = 0; // Reset botón pulsado
       continue; // Volve a while(1)
@@ -242,6 +254,7 @@ int main(void)
       button = 0; // Reset botón pulsado
       count = 0; // Iníciase conta de novo
     }
+    lcd_blink(0); // Por se actualiza count inesperadamente.
     
     /* Punto 2 */
     while (button == 0);
@@ -262,8 +275,8 @@ int main(void)
       button = 0; // Reset botón pulsado
       count = 0; // Iníciase conta de novo
     }
-    
-    lcd_SOS();
+    lcd_set(5,4);
+    lcd_blink(1);
     delay();
   }
   return 0;

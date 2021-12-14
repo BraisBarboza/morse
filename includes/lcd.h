@@ -12,7 +12,7 @@ void lcd_display_hex(uint16_t value);
 void lcd_display_time(uint8_t value1, uint8_t value2);
 void lcd_display_error(uint8_t errorNum);
 void lcd_clear();
-void lcd_SOS();
+void lcd_blink(uint8_t bool);
 
 // Define Number of Front and Back plane pins
 #define LCD_NUM_FRONTPLANE_PINS 8

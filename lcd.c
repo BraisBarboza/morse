@@ -326,12 +326,9 @@ void lcd_clear()
   }
 }
 
-void lcd_SOS()
+void lcd_blink(uint8_t bool)
 {
-  LCD->AR = (LCD_AR_BLINK(1)) | (LCD_AR_BRATE(0x02));
-  lcd_set(5,2); // S
-  lcd_set(0,3); // O
-  lcd_set(5,4); // S
+  LCD->AR = (LCD_AR_BLINK(bool)) | (LCD_AR_BRATE(0x02));
 }
 
 //
