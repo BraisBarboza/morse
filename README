@@ -1,17 +1,13 @@
-Implementa un pequeno xogo coa placa: o xogo consiste en que o usuario
-ten que premer no botón correspondente ao LED que a placa teña acendido
-momento.
+A función do led vermello é indicar que o programa non comezou a ler ningún símbolo e está esperando.
 
-- O botón esquerdo (sw2/sw3) correponde á luz vermella (luz esquerda)
-  e o botón dereito (sw1) á luz dereita.
+A función do led verde é proporcionar ao usuario unha idea dos saltos de tempo no procesador.
 
-- Os xestión da E/S cos botóns farase con interrupcións.
+O código xira en torno á variable count, que se actualiza cada vez que systick conta dende o máximo número posible ata 0.
 
-- Só unha das luces pode estar acendida en cada momento.
+Cada vez que alterna o led verde aumenta count.
 
-- Cóntanse os acertos e os erros durante a secuencia completa, e vanse
-  actualizando na pantalla LCD con este formato: hits:misses
+  Esíxese count < 6 entre símbolos do mesmo caracter
 
-- Ao rematar a secuencia non se admiten máis pulsacións, e o resultado
-  final (que xa non se actualizará) móstrase pestanexando no LCD,
-  mantendo o mesmo formato.
+  Esíxese count > 2 && count < 10 para cambio de símbolo
+
+En caso de que haxa calquera tipo de erro na codificación de 'S O S' a luz vermella debería acenderse.
