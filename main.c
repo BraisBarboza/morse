@@ -127,9 +127,8 @@ int main(void)
   while (1)
   {
 
-    led_red_toggle();
+    led_red_toggle(); // Led vermello encendido = esperando palabra
     lcd_clear();
-    led_red_toggle();
     init_systick();
     lcd_blink(0);
     button = 0; // Reset botón pulsado anteriormente
@@ -142,7 +141,9 @@ int main(void)
     {
 
       /* Punto 1 */{
-        while (button != 1);
+        while (button != 1)
+          count = 0;
+        led_red_toggle();
         count = 0;  // Iníciase conta de novo
         button = 0; // Reset botón pulsado
       }
