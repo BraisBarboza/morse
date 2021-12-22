@@ -93,6 +93,10 @@ void leds_ini()
 void SysTickIntHandler()
 {
   count ++;
+  led_green_toggle(); // Para control visual do tempo
+  if (count > 10){
+    button = 3; // Forzar botón equivocado
+  }
 }
 
 void init_systick()
@@ -116,16 +120,23 @@ int main(void)
 {
   irclk_ini();
   lcd_ini();
-  led_green_ini();
   led_red_ini();
+  led_green_ini();
   buttons_ini();
 
   while (1)
   {
-    init_systick();
+
+    led_red_toggle();
     lcd_clear();
+    led_red_toggle();
+    init_systick();
     lcd_blink(0);
     button = 0; // Reset botón pulsado anteriormente
+
+    // Cada vez que alterna o led verde aumenta count
+    // count < 6 entre símbolos do mesmo caracter
+    // count > 2 && count < 10 para cambio de símbolo
 
     /* Primeira S */
     {
@@ -175,10 +186,10 @@ int main(void)
       /* Liña 1 */{
         while (button == 0)
         {
-          if (count == 3)
+          if (count == 1)
             lcd_blink(0);
         }
-        if (count > 30 || count < 5 || button != 2)
+        if (count > 10 || count < 3 || button != 2)
         {
           button = 0; // Reset botón pulsado
           continue;   // Volve a while(1)
@@ -231,10 +242,10 @@ int main(void)
       /* Punto 1 */{
         while (button == 0)
         {
-          if (count == 3)
+          if (count == 2)
             lcd_blink(0);
         }
-        if (count > 30 || count < 5 || button != 1)
+        if (count > 10 || count < 3 || button != 1)
         {
           button = 0; // Reset botón pulsado
           continue;   // Volve a while(1)
