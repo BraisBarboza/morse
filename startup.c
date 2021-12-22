@@ -178,7 +178,7 @@ void Default_ResetHandler(void)
 #pragma weak SVCIntHandler = DefaultIntHandler
 #pragma weak DebugMonIntHandler = DefaultIntHandler
 #pragma weak PendSVIntHandler = DefaultIntHandler
-#pragma weak SysTickIntHandler = DefaultIntHandler
+//#pragma weak SysTickIntHandler = DefaultIntHandler
 #pragma weak DMA0IntHandler = Default_ResetHandler
 #pragma weak DMA1IntHandler = Default_ResetHandler
 #pragma weak DMA2IntHandler = Default_ResetHandler

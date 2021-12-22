@@ -12,7 +12,8 @@ void irclk_ini()
 void delay(void)
 {
   volatile int i;
-  for (i = 0; i < 5000000; i++);
+  for (i = 0; i < 5000000; i++)
+    ;
 }
 
 void PORTC_PORTD_IRQHandler(void)
@@ -89,56 +90,26 @@ void leds_ini()
   GPIOE->PSOR = (1 << 29);
 }
 
-void RTCSIntHandler(void){
-  count += 1;
+void SysTickIntHandler()
+{
+  count ++;
 }
 
-void RTC_reset()
+void init_systick()
 {
-  RTC->CR |= RTC_CR_SWR_MASK;
-  RTC->CR &= ~RTC_CR_SWR_MASK;
-
-  /* Set TSR register to 0x1 to avoid the timer invalid (TIF) bit being set in the SR register */
-  RTC->TSR = 1U;
+  SysTick->CTRL = 0;        // Dehabilitamos SysTick
+  SysTick->LOAD = 0xffffff; // Contar de 2⁽²³⁾-1 ata 0
+  SysTick->VAL = 0;         // Borrar o valor actual
+  SysTick->CTRL = 0x7;      // Habilitamos SysTick con petición de excepción
+  count = 0;
+  // usando o reloxo do procesador (core clock)
 }
 
-void RTC_ini()
+void stop_systick()
 {
-  SIM->SOPT2 |= SIM_SOPT2_CLKOUTSEL(1); // 0 para 1 Hz, 1 para oscilador
-  SIM->SOPT1 |= SIM_SOPT1_OSC32KSEL(1); // RTC_CLKIN
-  SIM->SCGC6 |= SIM_SCGC6_RTC_MASK;
-  NVIC_EnableIRQ(21);
-
-  RTC->LR |= RTC_LR_LRL(1);
-  RTC->LR |= RTC_LR_CRL(1);
-  RTC->LR |= RTC_LR_TCL(1);
-
-  //To clear the Time invalid Flag
-  RTC->TSR = 1;
-  /* Enable time seconds interrupts */
-  RTC->IER |= RTC_IER_TSIE(1);
-
-  /* Enable oscillator */
-  RTC->CR = RTC_CR_OSCE(1);
-  /* Setup the update mode and supervisor access mode */
-  RTC->CR |= RTC_CR_UM(1);
-  RTC->CR |= RTC_CR_SUP(1);
-  RTC->CR |= RTC_CR_WPS(1);
-
-  /* Configure the RTC time compensation register */
-  RTC->TCR |= RTC_TCR_CIR(0);
-  RTC->TCR |= RTC_TCR_TCR(0);
-  
-}
-
-void RTC_start()
-{
-  RTC->SR |= RTC_SR_TCE_MASK; // Time counter is enabled.
-}
-
-void RTC_stop()
-{
-  RTC->SR &= ~RTC_SR_TCE_MASK; // Time counter is disabled.
+  SysTick->CTRL = 0;        // Dehabilitamos SysTick
+  SysTick->VAL = 0;         // Borrar o valor actual
+  count = 0;
 }
 
 int main(void)
@@ -149,134 +120,165 @@ int main(void)
   led_red_ini();
   buttons_ini();
 
-  /**
-   * Cada vez que se pulse un botón débese comprobar e reiniciar o RTC.
-   *
-   * Pseudocódigo:
-   *
-   * while 1
-   *  lcd_clear();
-   *  esperar botón SW1
-   *    (comprobar RTC + esperar botón SW1) * 2
-   *      se non é o esperado "continue; // Volve a while(1)"
-   *    (comprobar RTC + esperar botón SW3) * 3
-   *      se non é o esperado "continue; // Volve a while(1)"
-   *    (comprobar RTC + esperar botón SW1) * 3
-   *      se non é o esperado "continue; // Volve a while(1)"
-   *  lcd_SOS();
-   *  delay();
-   * lcd_clear();
-   */
-
-  RTC_ini();
-  
-  while(1){
-    RTC_start();
+  while (1)
+  {
+    init_systick();
     lcd_clear();
     lcd_blink(0);
-    button = 0; // Reset botón pulsado
+    button = 0; // Reset botón pulsado anteriormente
 
     /* Primeira S */
-    /* Punto 1 */
-    while (button != 1);
-    count = 0; // Iníciase conta de novo
-    button = 0; // Reset botón pulsado
+    {
+
+      /* Punto 1 */{
+        while (button != 1);
+        count = 0;  // Iníciase conta de novo
+        button = 0; // Reset botón pulsado
+      }
+
+      /* Punto 2 */{
+        while (button == 0);
+        if (count > 5 || button != 1)
+        {
+          button = 0; // Reset botón pulsado
+          continue;   // Volve a while(1)
+        }
+        else
+        {
+          button = 0; // Reset botón pulsado
+          count = 0;  // Iníciase conta de novo
+        }
+      }
+
+      /* Punto 3 */{
+        while (button == 0);
+        if (count > 5 || button != 1)
+        {
+          button = 0; // Reset botón pulsado
+          continue;   // Volve a while(1)
+        }
+        else
+        {
+          button = 0; // Reset botón pulsado
+          count = 0;  // Iníciase conta de novo
+        }
+        lcd_set(5, 2);
+        lcd_blink(1);
+      }
     
-    /* Punto 2 */
-    while (button == 0);
-    if (count > 1 || button != 1){
-      button = 0; // Reset botón pulsado
-      continue; // Volve a while(1)
-    }else{
-      button = 0; // Reset botón pulsado
-      count = 0; // Iníciase conta de novo
     }
-
-    /* Punto 3 */
-    while (button == 0);
-    if (count > 1 || button != 1){
-      button = 0; // Reset botón pulsado
-      continue; // Volve a while(1)
-    }else{
-      button = 0; // Reset botón pulsado
-      count = 0; // Iníciase conta de novo
-    }
-    lcd_set(5,2);
-    lcd_blink(1);
-
+    
+    
     /* Primeira O */
-    /* Liña 1 */
-    while (button == 0){
-      if (count == 1)
-        lcd_blink(0);
-    }
-    if (count > 6 /*|| count < 1*/ || button != 2){
-      button = 0; // Reset botón pulsado
-      continue; // Volve a while(1)
-    }else{
-      button = 0; // Reset botón pulsado
-      count = 0; // Iníciase conta de novo
-    }
-    lcd_blink(0); // Por se actualiza count inesperadamente.
+    {
 
-    /* Liña 2 */
-    while (button == 0);
-    if (count > 1 || button != 2){
-      button = 0; // Reset botón pulsado
-      continue; // Volve a while(1)
-    }else{
-      button = 0; // Reset botón pulsado
-      count = 0; // Iníciase conta de novo
-    }
-
-    /* Liña 3 */
-    while (button == 0);
-    if (count > 1 || button != 2){
-      button = 0; // Reset botón pulsado
-      continue; // Volve a while(1)
-    }else{
-      button = 0; // Reset botón pulsado
-      count = 0; // Iníciase conta de novo
-    }
-    lcd_set(0,3);
-    lcd_blink(1);
-
-    /* Segunda S */
-    /* Punto 1 */
-    while (button == 0){
-      if (count == 1)
-        lcd_blink(0);
-    }
-    if (count > 6 /*|| count < 1*/ || button != 1){
-      button = 0; // Reset botón pulsado
-      continue; // Volve a while(1)
-    }else{
-      button = 0; // Reset botón pulsado
-      count = 0; // Iníciase conta de novo
-    }
-    lcd_blink(0); // Por se actualiza count inesperadamente.
+      /* Liña 1 */{
+        while (button == 0)
+        {
+          if (count == 3)
+            lcd_blink(0);
+        }
+        if (count > 30 || count < 5 || button != 2)
+        {
+          button = 0; // Reset botón pulsado
+          continue;   // Volve a while(1)
+        }
+        else
+        {
+          button = 0; // Reset botón pulsado
+          count = 0;  // Iníciase conta de novo
+        }
+        lcd_blink(0); // Por se non se chegou ao anterior lcd_blink.
+      }
+      
+      /* Liña 2 */{
+        while (button == 0)
+          ;
+        if (count > 5 || button != 2)
+        {
+          button = 0; // Reset botón pulsado
+          continue;   // Volve a while(1)
+        }
+        else
+        {
+          button = 0; // Reset botón pulsado
+          count = 0;  // Iníciase conta de novo
+        }
+      }
+      
+      /* Liña 3 */{
+        while (button == 0)  ;
+        if (count > 5 || button != 2)
+        {
+          button = 0; // Reset botón pulsado
+          continue;   // Volve a while(1)
+        }
+        else
+        {
+          button = 0; // Reset botón pulsado
+          count = 0;  // Iníciase conta de novo
+        }
+        lcd_set(0, 3);
+        lcd_blink(1);
+      }
     
-    /* Punto 2 */
-    while (button == 0);
-    if (count > 1 || button != 1){
-      button = 0; // Reset botón pulsado
-      continue; // Volve a while(1)
-    }else{
-      button = 0; // Reset botón pulsado
-      count = 0; // Iníciase conta de novo
     }
+    
+    
+    /* Segunda S */
+    {
 
-    /* Punto 3 */
-    while (button == 0);
-    if (count > 1 || button != 1){
-      button = 0; // Reset botón pulsado
-      continue; // Volve a while(1)
-    }else{
-      button = 0; // Reset botón pulsado
-      count = 0; // Iníciase conta de novo
+      /* Punto 1 */{
+        while (button == 0)
+        {
+          if (count == 3)
+            lcd_blink(0);
+        }
+        if (count > 30 || count < 5 || button != 1)
+        {
+          button = 0; // Reset botón pulsado
+          continue;   // Volve a while(1)
+        }
+        else
+        {
+          button = 0; // Reset botón pulsado
+          count = 0;  // Iníciase conta de novo
+        }
+        lcd_blink(0); // Por se non se chegou ao anterior lcd_blink.
+      }
+      
+      /* Punto 2 */{
+        while (button == 0);
+        if (count > 5 || button != 1)
+        {
+          button = 0; // Reset botón pulsado
+          continue;   // Volve a while(1)
+        }
+        else
+        {
+          button = 0; // Reset botón pulsado
+          count = 0;  // Iníciase conta de novo
+        }
+      }
+      
+      /* Punto 3 */{
+        while (button == 0);
+        if (count > 5 || button != 1)
+        {
+          button = 0; // Reset botón pulsado
+          continue;   // Volve a while(1)
+        }
+        else
+        {
+          button = 0; // Reset botón pulsado
+          count = 0;  // Iníciase conta de novo
+        }
+        lcd_set(5, 4);
+        lcd_blink(1);
+        }
+    
     }
-    lcd_set(5,4);
-    lcd_blink(1);
+    
     delay();
   }
   return 0;
